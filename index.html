@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ferricar · Control de Planillas</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;min-height:100vh}
+  .header{background:#fff;border-bottom:1px solid #e2e8f0;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10}
+  .header-left h1{font-size:16px;font-weight:600;color:#0f172a}
+  .header-left p{font-size:11px;color:#94a3b8;margin-top:2px}
+  .badge{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;border-radius:20px;padding:4px 12px;font-size:11px;font-weight:500}
+  .container{max-width:1100px;margin:0 auto;padding:20px}
+  .filtros{background:#fff;border-radius:14px;border:1px solid rgba(0,0,0,0.06);padding:16px 20px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.04)}
+  .filtros-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .filtros-label{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#94a3b8;font-weight:500}
+  .btn-periodo{padding:7px 16px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;color:#64748b;font-size:12px;cursor:pointer;transition:all .2s}
+  .btn-periodo:hover{border-color:#6366f1;color:#6366f1}
+  .btn-periodo.active{background:#1e3a5f;color:#fff;border-color:#1e3a5f}
+  .filtros-fechas{display:flex;align-items:center;gap:8px;margin-top:12px}
+  input[type=date]{padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;color:#334155;background:#f8fafc;outline:none}
+  input[type=date]:focus{border-color:#6366f1}
+  .btn-aplicar{padding:7px 18px;background:#1e3a5f;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-weight:500}
+  .btn-aplicar:hover{background:#1a3354}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+  .kpi{background:#fff;border-radius:12px;border:1px solid rgba(0,0,0,0.06);padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.04)}
+  .kpi-label{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:#94a3b8;margin-bottom:8px}
+  .kpi-valor{font-family:monospace;font-size:26px;font-weight:500;color:#0f172a}
+  .kpi-sub{font-size:11px;color:#94a3b8;margin-top:3px}
+  .kpi-verde .kpi-valor{color:#16a34a}
+  .kpi-rojo .kpi-valor{color:#dc2626}
+  .kpi-naranja .kpi-valor{color:#d97706}
+  .indicadores{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+  .ind{background:#fff;border-radius:12px;border:1px solid rgba(0,0,0,0.06);padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.04)}
+  .ind-label{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:#94a3b8;margin-bottom:10px}
+  .ind-nums{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+  .ind-principal{font-family:monospace;font-size:22px;font-weight:500}
+  .ind-total{font-size:12px;color:#cbd5e1;font-family:monospace}
+  .barra{height:5px;background:#f1f5f9;border-radius:3px;overflow:hidden;margin-bottom:6px}
+  .barra-fill{height:5px;border-radius:3px;transition:width .5s}
+  .ind-sub{font-size:11px;color:#94a3b8}
+  .dia-card{background:#fff;border-radius:14px;border:1px solid rgba(0,0,0,0.06);padding:20px 24px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.04)}
+  .dia-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .dia-titulo{font-size:13px;font-weight:600;color:#0f172a}
+  .dia-resumen{font-size:11px;color:#94a3b8;margin-top:2px}
+  table{width:100%;border-collapse:collapse}
+  th{padding:8px 10px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#94a3b8;font-weight:500;text-align:left;border-bottom:1px solid #f1f5f9}
+  td{padding:9px 10px;border-bottom:1px solid #f8fafc;font-size:12px;color:#334155}
+  .planilla-num{font-family:monospace;font-size:11px;color:#94a3b8}
+  .auxiliar-nombre{font-weight:500;color:#0f172a}
+  .badge-estado{display:inline-block;font-size:10px;padding:3px 9px;border-radius:20px;font-weight:500}
+  .badge-ok{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
+  .badge-falta{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+  .badge-sin{background:#fffbeb;color:#d97706;border:1px solid #fde68a}
+  .empty{background:#fff;border-radius:14px;border:1px solid rgba(0,0,0,0.06);padding:60px 24px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.04)}
+  .empty-icon{font-size:40px;margin-bottom:12px}
+  .empty-text{font-size:14px;font-weight:500;color:#334155}
+  .empty-sub{font-size:12px;color:#94a3b8;margin-top:4px}
+  .loading{text-align:center;padding:60px;color:#94a3b8;font-size:13px}
+  footer{text-align:center;padding:20px;font-size:10px;color:#cbd5e1;letter-spacing:1px;text-transform:uppercase;font-family:monospace}
+  @media(max-width:700px){.kpis{grid-template-columns:repeat(2,1fr)}.indicadores{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Ferricar · Control de Planillas</h1>
+    <p>Sistema de seguimiento de neveras y cubetas</p>
+  </div>
+  <span class="badge" id="badge-update">Cargando...</span>
+</div>
+
+<div class="container">
+
+  <div class="filtros">
+    <div class="filtros-top">
+      <span class="filtros-label">Periodo</span>
+      <button class="btn-periodo active" onclick="setPeriodo('hoy')">Hoy</button>
+      <button class="btn-periodo" onclick="setPeriodo('ayer')">Ayer</button>
+      <button class="btn-periodo" onclick="setPeriodo('semana')">Esta semana</button>
+      <button class="btn-periodo" onclick="setPeriodo('semana-pasada')">Semana pasada</button>
+      <button class="btn-periodo" onclick="setPeriodo('mes')">Este mes</button>
+    </div>
+    <div class="filtros-fechas">
+      <input type="date" id="fecha-inicio">
+      <span style="color:#94a3b8">→</span>
+      <input type="date" id="fecha-fin">
+      <button class="btn-aplicar" onclick="aplicarFechas()">Aplicar</button>
+    </div>
+  </div>
+
+  <div id="contenido"><div class="loading">Cargando datos...</div></div>
+
+  <footer>Ferricar · Sistema de Control Automatico · Actualizacion automatica cada hora</footer>
+</div>
+
+<script>
+const ID_OPERATIVO  = '13YQ64-7Qc_JRg7Q58C5uNzRmBRULp9GMN05j1hW4hwM';
+const ID_CUBETAS    = '12Y5RRCan8BsD4bm2HzoID0WIIGXd27zLixsgqa_HBiw';
+const HOJA_OP       = 'CUADRO OPERATIVO';
+const HOJA_CUB      = 'Respuestas de formulario 1';
+
+let dInicio, dFin;
+
+function hoy(){
+  const d=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Bogota'}));
+  return d;
+}
+function fmt(d){
+  return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
+}
+function fmtInput(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function parseFecha(s){
+  if(!s)return null;
+  const p=s.toString().trim().split('/');
+  if(p.length!==3)return null;
+  return new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0]));
+}
+
+function setPeriodo(p){
+  document.querySelectorAll('.btn-periodo').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+  const h=hoy();
+  if(p==='hoy'){dInicio=dFin=new Date(h);}
+  else if(p==='ayer'){const a=new Date(h);a.setDate(h.getDate()-1);dInicio=dFin=a;}
+  else if(p==='semana'){const l=new Date(h);l.setDate(h.getDate()-h.getDay()+1);dInicio=l;dFin=new Date(h);}
+  else if(p==='semana-pasada'){const l=new Date(h);l.setDate(h.getDate()-h.getDay()-6);const v=new Date(h);v.setDate(h.getDate()-h.getDay());dInicio=l;dFin=v;}
+  else if(p==='mes'){dInicio=new Date(h.getFullYear(),h.getMonth(),1);dFin=new Date(h);}
+  document.getElementById('fecha-inicio').value=fmtInput(dInicio);
+  document.getElementById('fecha-fin').value=fmtInput(dFin);
+  cargarDatos();
+}
+
+function aplicarFechas(){
+  document.querySelectorAll('.btn-periodo').forEach(b=>b.classList.remove('active'));
+  const fi=document.getElementById('fecha-inicio').value;
+  const ff=document.getElementById('fecha-fin').value;
+  if(!fi||!ff)return;
+  const p1=fi.split('-');const p2=ff.split('-');
+  dInicio=new Date(parseInt(p1[0]),parseInt(p1[1])-1,parseInt(p1[2]));
+  dFin=new Date(parseInt(p2[0]),parseInt(p2[1])-1,parseInt(p2[2]));
+  cargarDatos();
+}
+
+async function fetchSheet(id,hoja){
+  const url=`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(hoja)}`;
+  const r=await fetch(url);
+  const t=await r.text();
+  const json=JSON.parse(t.substring(47,t.length-2));
+  return json.table;
+}
+
+function tableToRows(table){
+  const cols=table.cols.map(c=>c.label);
+  return table.rows.map(r=>{
+    const obj={};
+    r.c.forEach((cell,i)=>{obj[cols[i]]=cell?cell.v:''});
+    return obj;
+  });
+}
+
+async function cargarDatos(){
+  document.getElementById('contenido').innerHTML='<div class="loading">Cargando datos...</div>';
+  document.getElementById('badge-update').textContent='Actualizando...';
+  try{
+    const [tOp,tCub]=await Promise.all([
+      fetchSheet(ID_OPERATIVO,HOJA_OP),
+      fetchSheet(ID_CUBETAS,HOJA_CUB)
+    ]);
+    const operativo=tableToRows(tOp);
+    const cubetas=tableToRows(tCub);
+    procesarYRenderizar(operativo,cubetas);
+    document.getElementById('badge-update').textContent='Actualizado '+new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  }catch(e){
+    document.getElementById('contenido').innerHTML='<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Error cargando datos</div><div class="empty-sub">'+e.message+'</div></div>';
+    document.getElementById('badge-update').textContent='Error';
+  }
+}
+
+function procesarYRenderizar(operativo,cubetas){
+  const mapaRetornos={};
+  cubetas.forEach(r=>{
+    const planilla=(r['planilla']||'').toString().toLowerCase().trim();
+    if(!planilla)return;
+    if(!mapaRetornos[planilla])mapaRetornos[planilla]={nev:0,cub:0};
+    mapaRetornos[planilla].nev+=parseInt(r['neveras']||0);
+    mapaRetornos[planilla].cub+=parseInt(r['cantidad cubetas']||0);
+  });
+
+  const planillasFiltradas=operativo.filter(row=>{
+    const f=parseFecha((row['FECHA']||'').toString().trim());
+    if(!f)return false;
+    const fi=new Date(dInicio);fi.setHours(0,0,0,0);
+    const ff=new Date(dFin);ff.setHours(23,59,59,999);
+    return f>=fi&&f<=ff;
+  });
+
+  if(planillasFiltradas.length===0){
+    document.getElementById('contenido').innerHTML=`
+    <div class="empty">
+      <div class="empty-icon">📭</div>
+      <div class="empty-text">Sin planillas para este periodo</div>
+      <div class="empty-sub">Proba con otro rango de fechas</div>
+    </div>`;
+    return;
+  }
+
+  let totPlan=0,totOk=0,totSin=0,totFalt=0,totNevSal=0,totNevIng=0,totCubSal=0,totCubIng=0;
+  const dias={};
+  const nombres=['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'];
+
+  planillasFiltradas.forEach(row=>{
+    const fecha=(row['FECHA']||'').toString().trim();
+    const planilla=(row['PLANILLA']||'').toString().trim();
+    const auxiliar=(row['AUXILIAR']||'').toString().trim();
+    const ruta=(row['RUTA']||'').toString().trim();
+    const nevSal=parseInt(row['NEVERAS']||0);
+    const cubSal=parseInt(row['CUBETAS']||row['CANTIDAD CUBETAS']||0);
+    const ret=mapaRetornos[planilla.toLowerCase().trim()];
+    const nevIng=ret?ret.nev:0;
+    const cubIng=ret?ret.cub:0;
+    const retOk=!!ret;
+    const nevFalt=nevSal-nevIng;
+
+    totPlan++;totNevSal+=nevSal;totNevIng+=nevIng;totCubSal+=cubSal;totCubIng+=cubIng;
+    if(!retOk)totSin++;
+    else if(nevFalt>0)totFalt++;
+    else totOk++;
+
+    if(!dias[fecha])dias[fecha]={fecha,planillas:[],cubSal:0,cubIng:0,nevSal:0,nevIng:0};
+    dias[fecha].cubSal+=cubSal;dias[fecha].cubIng+=cubIng;
+    dias[fecha].nevSal+=nevSal;dias[fecha].nevIng+=nevIng;
+    dias[fecha].planillas.push({planilla,auxiliar,ruta,nevSal,nevIng,nevFalt,cubSal,cubIng,retOk});
+  });
+
+  const pctNev=totNevSal>0?Math.round(totNevIng/totNevSal*100):0;
+  const pctPlan=totPlan>0?Math.round(totOk/totPlan*100):0;
+  const pctFalt=totPlan>0?Math.round(totFalt/totPlan*100):0;
+  const cNev=pctNev>=90?'#16a34a':pctNev>=60?'#d97706':'#dc2626';
+  const cPlan=pctPlan>=80?'#16a34a':pctPlan>=50?'#d97706':'#dc2626';
+  const cFalt=totFalt===0?'#16a34a':'#dc2626';
+
+  const diasOrdenados=Object.values(dias).sort((a,b)=>parseFecha(a.fecha)-parseFecha(b.fecha));
+
+  let htmlDias='';
+  diasOrdenados.forEach(dia=>{
+    const p=dia.fecha.split('/');
+    const d=new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0]));
+    const nomDia=nombres[d.getDay()];
+    let filas='';
+    dia.planillas.forEach(p=>{
+      const estado=!p.retOk?'Sin retorno':p.nevFalt>0?'Faltan '+p.nevFalt:'OK';
+      const cls=!p.retOk?'badge-sin':p.nevFalt>0?'badge-falta':'badge-ok';
+      filas+=`<tr>
+        <td class="planilla-num">${p.planilla}</td>
+        <td class="auxiliar-nombre">${p.auxiliar}</td>
+        <td style="color:#64748b">${p.ruta}</td>
+        <td style="text-align:center;font-family:monospace">${p.cubSal}</td>
+        <td style="text-align:center;font-family:monospace">${p.cubIng}</td>
+        <td style="text-align:center;font-family:monospace">${p.nevSal}</td>
+        <td style="text-align:center;font-family:monospace">${p.nevIng}</td>
+        <td style="text-align:center"><span class="badge-estado ${cls}">${estado}</span></td>
+      </tr>`;
+    });
+    htmlDias+=`<div class="dia-card">
+      <div class="dia-header">
+        <div>
+          <div class="dia-titulo">${nomDia} ${dia.fecha}</div>
+          <div class="dia-resumen">Cub: ${dia.cubSal} sal / ${dia.cubIng} ing &nbsp;·&nbsp; Nev: ${dia.nevSal} sal / ${dia.nevIng} ing</div>
+        </div>
+      </div>
+      <table>
+        <thead><tr>
+          <th>Planilla</th><th>Auxiliar</th><th>Ruta</th>
+          <th style="text-align:center">Cub.Sal</th><th style="text-align:center">Cub.Ing</th>
+          <th style="text-align:center">Nev.Sal</th><th style="text-align:center">Nev.Ing</th>
+          <th style="text-align:center">Estado</th>
+        </tr></thead>
+        <tbody>${filas}</tbody>
+      </table>
+    </div>`;
+  });
+
+  document.getElementById('contenido').innerHTML=`
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-label">Total planillas</div><div class="kpi-valor">${totPlan}</div><div class="kpi-sub">Del periodo</div></div>
+    <div class="kpi kpi-verde"><div class="kpi-label">Retornaron OK</div><div class="kpi-valor">${totOk}</div><div class="kpi-sub">Neveras completas</div></div>
+    <div class="kpi kpi-naranja"><div class="kpi-label">Sin retorno</div><div class="kpi-valor">${totSin}</div><div class="kpi-sub">Sin registro</div></div>
+    <div class="kpi kpi-rojo"><div class="kpi-label">Nev. faltantes</div><div class="kpi-valor">${totNevSal-totNevIng}</div><div class="kpi-sub">${totNevSal} sal / ${totNevIng} ing</div></div>
+  </div>
+  <div class="indicadores">
+    <div class="ind"><div class="ind-label">Neveras retornadas</div>
+      <div class="ind-nums"><span class="ind-principal" style="color:${cNev}">${totNevIng}</span><span class="ind-total">/ ${totNevSal}</span></div>
+      <div class="barra"><div class="barra-fill" style="width:${pctNev}%;background:${cNev}"></div></div>
+      <div class="ind-sub">${pctNev}% · Faltan ${totNevSal-totNevIng}</div></div>
+    <div class="ind"><div class="ind-label">Planillas completas</div>
+      <div class="ind-nums"><span class="ind-principal" style="color:${cPlan}">${totOk}</span><span class="ind-total">/ ${totPlan}</span></div>
+      <div class="barra"><div class="barra-fill" style="width:${pctPlan}%;background:${cPlan}"></div></div>
+      <div class="ind-sub">${pctPlan}% · ${totSin} sin registrar</div></div>
+    <div class="ind"><div class="ind-label">Con nev. faltantes</div>
+      <div class="ind-nums"><span class="ind-principal" style="color:${cFalt}">${totFalt}</span><span class="ind-total">/ ${totPlan}</span></div>
+      <div class="barra"><div class="barra-fill" style="width:${pctFalt}%;background:${cFalt}"></div></div>
+      <div class="ind-sub">${pctFalt}% con problema</div></div>
+  </div>
+  ${htmlDias}`;
+}
+
+// Iniciar con hoy
+window.onload=()=>setPeriodo('hoy');
+setInterval(cargarDatos,3600000);
+</script>
+</body>
+</html>
